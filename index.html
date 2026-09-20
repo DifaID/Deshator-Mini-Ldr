@@ -2,2979 +2,738 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Mini LDR Studio V4 - Direct WebRTC</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Mini LDR Studio V5 - Direct WebRTC</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
 *{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:#080808;
-  color:#fff;
-  font-family:Arial,sans-serif;
-  text-align:center
-}
-
-main{
-  max-width:900px;
-  margin:auto;
-  padding:10px
-}
-
-h1{
-  font-size:22px;
-  margin:7px 0
-}
-
-p{
-  color:#bbb;
-  margin:5px
-}
-
-button,input{
-  border:0;
-  border-radius:9px;
-  padding:11px 13px;
-  font-size:14px
-}
-
-button{
-  background:#e53935;
-  color:#fff;
-  font-weight:bold;
-  margin:4px;
-  cursor:pointer
-}
-
-button:active{
-  transform:scale(.96)
-}
-
-input{
-  text-align:center;
-  background:#222;
-  color:#fff;
-  border:1px solid #444
-}
-
-#kodeInput{
-  width:140px;
-  text-transform:uppercase
-}
-
-#status{
-  margin:9px;
-  color:#79ff79;
-  font-size:13px
-}
-
-#roomInfo{
-  margin:8px;
-  font-size:16px
-}
-
-.hidden{
-  display:none!important
-}
-
-/* ========================= CAMERA ========================= */
-
-.cameras{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:5px
-}
-
-.camera{
-  position:relative;
-  width:100%;
-  aspect-ratio:3/4;
-  background:#111;
-  overflow:hidden;
-  border-radius:10px;
-  cursor:pointer
-}
-
-.camera video{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  background:#000;
-  pointer-events:auto
-}
-
-.localVideo{
-  transform:scaleX(-1)
-}
-
-.remoteVideo{
-  transform:none
-}
-
-.label{
-  position:absolute;
-  top:7px;
-  left:7px;
-  z-index:5;
-  background:#000b;
-  padding:5px 8px;
-  border-radius:6px;
-  font-size:11px;
-  pointer-events:none
-}
-
-.connectionBadge{
-  position:absolute;
-  bottom:7px;
-  left:7px;
-  right:7px;
-  z-index:5;
-  background:#000b;
-  padding:5px;
-  border-radius:6px;
-  font-size:10px;
-  color:#aaa;
-  pointer-events:none
-}
-
-/* ========================= CONTROL ========================= */
-
-.controls{
-  margin-top:8px
-}
-
-#fotoBtn{
-  font-size:16px;
-  padding:13px 22px
-}
-
-#copyRoom{
-  background:#333
-}
-
-#infoBtn{
-  background:#444
-}
-
-/* ========================= TOAST ========================= */
-
-#toastNotification{
-  position:fixed;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#16a34a;
-  color:#fff;
-  padding:12px 24px;
-  border-radius:30px;
-  font-weight:bold;
-  font-size:14px;
-  box-shadow:0 4px 15px rgba(0,0,0,.5);
-  z-index:1000;
-  transition:all .3s ease
-}
-
-/* ========================= DEBUG ========================= */
-
-#debugBox{
-  margin-top:10px;
-  background:#101010;
-  border:1px solid #292929;
-  border-radius:10px;
-  padding:10px;
-  text-align:left;
-  font-size:11px;
-  color:#aaa;
-  line-height:1.55;
-  max-height:180px;
-  overflow:auto
-}
-
-.debugGood{
-  color:#79ff79
-}
-
-.debugWarn{
-  color:#ffd166
-}
-
-.debugBad{
-  color:#ff6b6b
-}
-
-/* ========================= EFFECT ========================= */
-
-.effects{
-  display:flex;
-  gap:5px;
-  overflow-x:auto;
-  padding:8px 2px;
-  margin-top:5px
-}
-
-.effects button{
-  white-space:nowrap;
-  background:#252525;
-  font-size:12px
-}
-
-.effects button.active{
-  background:#e53935
-}
-
-#effectName{
-  font-size:12px;
-  color:#aaa
-}
-
-/* ========================= AI ========================= */
-
-.ai{
-  background:#151515;
-  border-radius:10px;
-  padding:10px;
-  margin-top:10px;
-  text-align:left
-}
-
-.ai h3{
-  margin:2px 0 7px;
-  font-size:15px
-}
-
-#aiPrompt{
-  width:100%;
-  text-align:left;
-  outline:none
-}
-
-#aiPrompt::placeholder{
-  color:#777
-}
-
-#aiPreview{
-  margin-top:7px;
-  color:#aaa;
-  font-size:12px;
-  line-height:1.4
-}
-
-/* ========================= GALLERY ========================= */
-
-#galleryArea{
-  margin-top:20px;
-  text-align:left
-}
-
-.galleryTitle{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:8px
-}
-
-.galleryTitle h2{
-  font-size:17px;
-  margin:0
-}
-
-#photoCount{
-  font-size:12px;
-  color:#aaa
-}
-
-.gallery{
-  display:flex;
-  flex-direction:column;
-  gap:12px
-}
-
-.photoCard{
-  background:#151515;
-  border-radius:12px;
-  padding:10px;
-  border:1px solid #292929;
-  text-align:center
-}
-
-.photoCard img{
-  display:block;
-  width:100%;
-  max-width:280px;
-  margin:auto;
-  border-radius:7px;
-  border:2px solid #333
-}
-
-.photoActions{
-  display:flex;
-  justify-content:center;
-  gap:5px;
-  margin-top:10px;
-  flex-wrap:wrap
-}
-
-.downloadBtn{
-  background:#2563eb
-}
-
-.printBtn{
-  background:#16a34a
-}
-
-.emptyGallery{
-  background:#111;
-  border:1px dashed #444;
-  border-radius:10px;
-  padding:20px;
-  color:#777;
-  font-size:13px;
-  text-align:center
-}
-
-/* ========================= COUNTDOWN ========================= */
-
-#countdown{
-  position:fixed;
-  inset:0;
-  background:#000c;
-  z-index:999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:100px;
-  font-weight:bold
-}
-
-/* ========================= FILTER ========================= */
-
-.fx-normal{filter:none}
-.fx-vivid{filter:saturate(1.5) contrast(1.08)}
-.fx-warm{filter:sepia(.22) saturate(1.35) brightness(1.04)}
-.fx-cool{filter:saturate(.9) hue-rotate(12deg) brightness(1.04)}
-.fx-cinema{filter:contrast(1.25) saturate(.8) brightness(.9)}
-.fx-vintage{filter:sepia(.45) contrast(1.05) saturate(.75)}
-.fx-bw{filter:grayscale(1) contrast(1.15)}
-
-/* ========================= PRINT ========================= */
-
-#printSheet{
-  display:none
-}
-
+body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;text-align:center}
+main{max-width:900px;margin:auto;padding:10px}
+h1{font-size:22px;margin:7px 0}
+p{color:#bbb;margin:5px}
+button,input{border:0;border-radius:9px;padding:11px 13px;font-size:14px}
+button{background:#e53935;color:#fff;font-weight:bold;margin:4px;cursor:pointer}
+button:active{transform:scale(.96)}
+input{text-align:center;background:#222;color:#fff;border:1px solid #444}
+#kodeInput{width:140px;text-transform:uppercase}
+#status{margin:9px;color:#79ff79;font-size:13px}
+#roomInfo{margin:8px;font-size:16px}
+.hidden{display:none!important}
+.cameras{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.camera{position:relative;width:100%;aspect-ratio:3/4;background:#111;overflow:hidden;border-radius:10px;cursor:pointer}
+.camera video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;pointer-events:auto}
+.localVideo{transform:scaleX(-1)}
+.remoteVideo{transform:none}
+.label{position:absolute;top:7px;left:7px;z-index:5;background:#000b;padding:5px 8px;border-radius:6px;font-size:11px;pointer-events:none}
+.connectionBadge{position:absolute;bottom:7px;left:7px;right:7px;z-index:5;background:#000b;padding:5px;border-radius:6px;font-size:10px;color:#aaa;pointer-events:none}
+.controls{margin-top:8px}
+#fotoBtn{font-size:16px;padding:13px 22px}
+#copyRoom{background:#333}
+#infoBtn{background:#444}
+#toastNotification{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 24px;border-radius:30px;font-weight:bold;font-size:14px;box-shadow:0 4px 15px rgba(0,0,0,.5);z-index:1000}
+#debugBox{margin-top:10px;background:#101010;border:1px solid #292929;border-radius:10px;padding:10px;text-align:left;font-size:11px;color:#aaa;line-height:1.55;max-height:220px;overflow:auto}
+.debugGood{color:#79ff79}.debugWarn{color:#ffd166}.debugBad{color:#ff6b6b}
+.effects{display:flex;gap:5px;overflow-x:auto;padding:8px 2px;margin-top:5px}
+.effects button{white-space:nowrap;background:#252525;font-size:12px}.effects button.active{background:#e53935}
+#effectName{font-size:12px;color:#aaa}
+.ai{background:#151515;border-radius:10px;padding:10px;margin-top:10px;text-align:left}
+.ai h3{margin:2px 0 7px;font-size:15px}
+#aiPrompt{width:100%;text-align:left;outline:none}
+#aiPrompt::placeholder{color:#777}
+#aiPreview{margin-top:7px;color:#aaa;font-size:12px;line-height:1.4}
+#galleryArea{margin-top:20px;text-align:left}
+.galleryTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.galleryTitle h2{font-size:17px;margin:0}
+#photoCount{font-size:12px;color:#aaa}
+.gallery{display:flex;flex-direction:column;gap:12px}
+.photoCard{background:#151515;border-radius:12px;padding:10px;border:1px solid #292929;text-align:center}
+.photoCard img{display:block;width:100%;max-width:280px;margin:auto;border-radius:7px;border:2px solid #333}
+.photoActions{display:flex;justify-content:center;gap:5px;margin-top:10px;flex-wrap:wrap}
+.downloadBtn{background:#2563eb}.printBtn{background:#16a34a}
+.emptyGallery{background:#111;border:1px dashed #444;border-radius:10px;padding:20px;color:#777;font-size:13px;text-align:center}
+#countdown{position:fixed;inset:0;background:#000c;z-index:999;display:flex;align-items:center;justify-content:center;font-size:100px;font-weight:bold}
+.fx-normal{filter:none}.fx-vivid{filter:saturate(1.5) contrast(1.08)}.fx-warm{filter:sepia(.22) saturate(1.35) brightness(1.04)}.fx-cool{filter:saturate(.9) hue-rotate(12deg) brightness(1.04)}.fx-cinema{filter:contrast(1.25) saturate(.8) brightness(.9)}.fx-vintage{filter:sepia(.45) contrast(1.05) saturate(.75)}.fx-bw{filter:grayscale(1) contrast(1.15)}
+#printSheet{display:none}
 @media print{
-
-  body{
-    background:#fff;
-    color:#000
-  }
-
-  body>*{
-    display:none!important
-  }
-
-  #printSheet{
-    display:flex!important;
-    justify-content:center;
-    align-items:flex-start;
-    width:100%;
-    padding:5mm
-  }
-
-  .printStripPhoto{
-    display:block;
-    width:100%;
-    max-width:80mm;
-    height:auto
-  }
-
-  @page{
-    size:A4 portrait;
-    margin:10mm
-  }
+body{background:#fff;color:#000}body>*{display:none!important}
+#printSheet{display:flex!important;justify-content:center;align-items:flex-start;width:100%;padding:5mm}
+.printStripPhoto{display:block;width:100%;max-width:80mm;height:auto}
+@page{size:A4 portrait;margin:10mm}
 }
 </style>
 </head>
-
 <body>
-
 <main>
-
-<h1>📸 Mini LDR Studio V4</h1>
-
+<h1>📸 Mini LDR Studio V5</h1>
 <p>Studio foto jarak jauh • Direct WebRTC</p>
 
 <div id="setup">
-
-<button id="buatBtn">
-BUAT ROOM (HOST)
-</button>
-
+<button id="buatBtn">BUAT ROOM (HOST)</button>
 <div style="margin:10px 0">
-
-<input
-id="kodeInput"
-maxlength="6"
-placeholder="KODE ROOM"
->
-
-<button id="gabungBtn">
-GABUNG (GUEST)
-</button>
-
+<input id="kodeInput" maxlength="6" placeholder="KODE ROOM">
+<button id="gabungBtn">GABUNG (GUEST)</button>
 </div>
-
 </div>
 
 <div id="roomInfo"></div>
-
-<button id="copyRoom" class="hidden">
-📋 SALIN KODE
-</button>
-
-<button id="infoBtn" class="hidden">
-🔍 INFO KONEKSI
-</button>
-
-<div id="status">
-Belum terhubung
-</div>
-
-<!-- CAMERA -->
+<button id="copyRoom" class="hidden">📋 SALIN KODE</button>
+<button id="infoBtn" class="hidden">🔍 INFO KONEKSI</button>
+<div id="status">Belum terhubung</div>
 
 <div id="cameras" class="cameras hidden">
-
 <div class="camera" onclick="paksaPlayVideo()">
-
-<div class="label" id="labelLeft">
-HOST
+<div class="label" id="labelLeft">HOST</div>
+<video id="videoLeft" autoplay playsinline muted></video>
+<div class="connectionBadge" id="badgeLeft">Menunggu...</div>
 </div>
-
-<video
-id="videoLeft"
-autoplay
-playsinline
-muted
-></video>
-
-<div
-class="connectionBadge"
-id="badgeLeft">
-Menunggu...
-</div>
-
-</div>
-
-
 <div class="camera" onclick="paksaPlayVideo()">
-
-<div class="label" id="labelRight">
-GUEST
+<div class="label" id="labelRight">GUEST</div>
+<video id="videoRight" autoplay playsinline muted></video>
+<div class="connectionBadge" id="badgeRight">Menunggu...</div>
+</div>
 </div>
 
-<video
-id="videoRight"
-autoplay
-playsinline
-muted
-></video>
-
-<div
-class="connectionBadge"
-id="badgeRight">
-Menunggu...
-</div>
-
-</div>
-
-</div>
-
-
-<div class="controls">
-
-<button
-id="fotoBtn"
-class="hidden">
-📸 JEPRET FOTO
-</button>
-
-</div>
-
-
-<!-- EFFECT -->
+<div class="controls"><button id="fotoBtn" class="hidden">📸 JEPRET FOTO</button></div>
 
 <div id="effectArea" class="hidden">
-
-<div id="effectName">
-Efek: Normal
-</div>
-
+<div id="effectName">Efek: Normal</div>
 <div class="effects">
-
-<button data-fx="fx-normal" class="active">
-Normal
-</button>
-
-<button data-fx="fx-vivid">
-Vivid
-</button>
-
-<button data-fx="fx-warm">
-Warm
-</button>
-
-<button data-fx="fx-cool">
-Cool
-</button>
-
-<button data-fx="fx-cinema">
-Cinema
-</button>
-
-<button data-fx="fx-vintage">
-Vintage
-</button>
-
-<button data-fx="fx-bw">
-B&W
-</button>
-
+<button data-fx="fx-normal" class="active">Normal</button>
+<button data-fx="fx-vivid">Vivid</button>
+<button data-fx="fx-warm">Warm</button>
+<button data-fx="fx-cool">Cool</button>
+<button data-fx="fx-cinema">Cinema</button>
+<button data-fx="fx-vintage">Vintage</button>
+<button data-fx="fx-bw">B&W</button>
 </div>
-
 </div>
-
-
-<!-- AI -->
 
 <div id="aiArea" class="ai hidden">
-
-<h3>
-🤖 Prompt AI Background Text
-</h3>
-
-<input
-id="aiPrompt"
-placeholder="Contoh: Studio Aestetik Modern, Sunset vibe..."
->
-
-<button
-id="aiBtn"
-style="margin-top:6px">
-✨ TERAPKAN TEMA AI
-</button>
-
-<div id="aiPreview">
-Prompt belum digunakan.
+<h3>🤖 Prompt AI Background Text</h3>
+<input id="aiPrompt" placeholder="Contoh: Studio Aestetik Modern, Sunset vibe...">
+<button id="aiBtn" style="margin-top:6px">✨ TERAPKAN TEMA AI</button>
+<div id="aiPreview">Prompt belum digunakan.</div>
 </div>
 
+<div id="debugBox" class="hidden">
+<b>🔧 WebRTC Diagnostic V5</b>
+<div id="debugContent">Menunggu...</div>
 </div>
-
-
-<!-- DEBUG -->
-
-<div
-id="debugBox"
-class="hidden">
-
-<b>🔧 WebRTC Diagnostic</b>
-
-<div id="debugContent">
-Menunggu...
-</div>
-
-</div>
-
-
-<!-- GALLERY -->
 
 <div id="galleryArea" class="hidden">
-
-<div class="galleryTitle">
-
-<h2>
-🎞️ Photobooth Strip Hasil
-</h2>
-
-<span id="photoCount">
-0 Pose
-</span>
-
-</div>
-
-<div
-id="gallery"
-class="gallery">
-</div>
-
+<div class="galleryTitle"><h2>🎞️ Photobooth Strip Hasil</h2><span id="photoCount">0 Pose</span></div>
+<div id="gallery" class="gallery"></div>
 <br>
-
-<button
-id="resetBtn"
-style="background:#444">
-🔄 RESET / AMBIL ULANG
-</button>
-
+<button id="resetBtn" style="background:#444">🔄 RESET / AMBIL ULANG</button>
 </div>
-
 </main>
 
-
-<div
-id="countdown"
-class="hidden">
-3
-</div>
-
-
-<div
-id="toastNotification"
-class="hidden">
-📸 Host mengambil foto!
-</div>
-
-
+<div id="countdown" class="hidden">3</div>
+<div id="toastNotification" class="hidden">📸 Host mengambil foto!</div>
 <div id="printSheet"></div>
 
-
 <script>
+/* ========================= SUPABASE ========================= */
+const SUPABASE_URL="https://fdiurlgmbhzzoxtcnpmr.supabase.co";
+const SUPABASE_KEY="sb_publishable_RVQ0mdl1PO17U_NanI-bGA_ZpoE4Zii";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-/* =========================================================
-   SUPABASE
-========================================================= */
-
-const SUPABASE_URL =
-"https://fdiurlgmbhzzoxtcnpmr.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_RVQ0mdl1PO17U_NanI-bGA_ZpoE4Zii";
-
-const supabaseClient =
-supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-
-/* =========================================================
-   WEBRTC
-   TANPA TURN
-========================================================= */
-
-const ICE_SERVERS = [
-
-  {
-    urls:"stun:stun.l.google.com:19302"
-  },
-
-  {
-    urls:"stun:stun1.l.google.com:19302"
-  },
-
-  {
-    urls:"stun:stun2.l.google.com:19302"
-  },
-
-  {
-    urls:"stun:stun3.l.google.com:19302"
-  }
-
+/* ========================= WEBRTC: TANPA TURN ========================= */
+const ICE_SERVERS=[
+{urls:"stun:stun.l.google.com:19302"},
+{urls:"stun:stun1.l.google.com:19302"},
+{urls:"stun:stun2.l.google.com:19302"},
+{urls:"stun:stun3.l.google.com:19302"}
 ];
 
+/* ========================= VARIABLES ========================= */
+let role=null,roomCode=null,channel=null,localStream=null,peer=null;
+let pendingCandidates=[],remoteStream=null,remoteClientId=null,hostClientId=null;
+let currentEffect="fx-normal",currentPrompt="",capturing=false,connectedOnce=false;
+let readyTimer=null,reconnectTimer=null,offerTimer=null,offerInProgress=false;
+let photoFrames=[];
+const MAX_PHOTOS=4;
+const clientId=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now());
+let sessionId=Math.random().toString(36).slice(2,10).toUpperCase();
 
-/* =========================================================
-   VARIABLES
-========================================================= */
+/* ========================= ELEMENTS ========================= */
+const setup=document.getElementById("setup"),roomInfo=document.getElementById("roomInfo");
+const status=document.getElementById("status"),cameras=document.getElementById("cameras");
+const videoLeft=document.getElementById("videoLeft"),videoRight=document.getElementById("videoRight");
+const labelLeft=document.getElementById("labelLeft"),labelRight=document.getElementById("labelRight");
+const badgeLeft=document.getElementById("badgeLeft"),badgeRight=document.getElementById("badgeRight");
+const fotoBtn=document.getElementById("fotoBtn"),copyRoom=document.getElementById("copyRoom");
+const infoBtn=document.getElementById("infoBtn"),countdown=document.getElementById("countdown");
+const toastNotification=document.getElementById("toastNotification"),effectArea=document.getElementById("effectArea");
+const aiArea=document.getElementById("aiArea"),effectName=document.getElementById("effectName");
+const aiPrompt=document.getElementById("aiPrompt"),aiPreview=document.getElementById("aiPreview");
+const galleryArea=document.getElementById("galleryArea"),gallery=document.getElementById("gallery");
+const photoCount=document.getElementById("photoCount"),resetBtn=document.getElementById("resetBtn");
+const printSheet=document.getElementById("printSheet"),debugBox=document.getElementById("debugBox");
+const debugContent=document.getElementById("debugContent");
 
-let role = null;
-
-let roomCode = null;
-
-let channel = null;
-
-let localStream = null;
-
-let peer = null;
-
-let pendingCandidates = [];
-
-let currentEffect = "fx-normal";
-
-let currentPrompt = "";
-
-let capturing = false;
-
-let connectedOnce = false;
-
-let readyTimer = null;
-
-let reconnectTimer = null;
-
-let lastRemoteTrack = null;
-
-const MAX_PHOTOS = 4;
-
-let photoFrames = [];
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const setup =
-document.getElementById("setup");
-
-const roomInfo =
-document.getElementById("roomInfo");
-
-const status =
-document.getElementById("status");
-
-const cameras =
-document.getElementById("cameras");
-
-const videoLeft =
-document.getElementById("videoLeft");
-
-const videoRight =
-document.getElementById("videoRight");
-
-const labelLeft =
-document.getElementById("labelLeft");
-
-const labelRight =
-document.getElementById("labelRight");
-
-const badgeLeft =
-document.getElementById("badgeLeft");
-
-const badgeRight =
-document.getElementById("badgeRight");
-
-const fotoBtn =
-document.getElementById("fotoBtn");
-
-const copyRoom =
-document.getElementById("copyRoom");
-
-const infoBtn =
-document.getElementById("infoBtn");
-
-const countdown =
-document.getElementById("countdown");
-
-const toastNotification =
-document.getElementById("toastNotification");
-
-const effectArea =
-document.getElementById("effectArea");
-
-const aiArea =
-document.getElementById("aiArea");
-
-const effectName =
-document.getElementById("effectName");
-
-const aiPrompt =
-document.getElementById("aiPrompt");
-
-const aiPreview =
-document.getElementById("aiPreview");
-
-const galleryArea =
-document.getElementById("galleryArea");
-
-const gallery =
-document.getElementById("gallery");
-
-const photoCount =
-document.getElementById("photoCount");
-
-const resetBtn =
-document.getElementById("resetBtn");
-
-const printSheet =
-document.getElementById("printSheet");
-
-const debugBox =
-document.getElementById("debugBox");
-
-const debugContent =
-document.getElementById("debugContent");
-
-
-/* =========================================================
-   ROOM CODE
-========================================================= */
-
+/* ========================= ROOM ========================= */
 function buatKode(){
-
-  const chars =
-  "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-  let kode = "";
-
-  for(let i=0;i<6;i++){
-
-    kode +=
-    chars[
-      Math.floor(
-        Math.random()*chars.length
-      )
-    ];
-
-  }
-
-  return kode;
+const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let kode="";
+for(let i=0;i<6;i++)kode+=chars[Math.floor(Math.random()*chars.length)];
+return kode;
 }
 
-
-/* =========================================================
-   DEBUG
-========================================================= */
-
+/* ========================= DEBUG ========================= */
 function debug(message,type=""){
-
-  const time =
-  new Date().toLocaleTimeString();
-
-  let cls = "";
-
-  if(type==="good") cls="debugGood";
-
-  if(type==="warn") cls="debugWarn";
-
-  if(type==="bad") cls="debugBad";
-
-  debugContent.innerHTML +=
-  `<div class="${cls}">
-  [${time}] ${escapeHTML(message)}
-  </div>`;
-
-  debugContent.parentElement.scrollTop =
-  debugContent.parentElement.scrollHeight;
-
-  console.log("[LDR]",message);
+const time=new Date().toLocaleTimeString();
+const cls=type==="good"?"debugGood":type==="warn"?"debugWarn":type==="bad"?"debugBad":"";
+debugContent.innerHTML+=`<div class="${cls}">[${time}] ${escapeHTML(message)}</div>`;
+debugContent.parentElement.scrollTop=debugContent.parentElement.scrollHeight;
+console.log("[LDR V5]",message);
 }
+function clearDebug(){debugContent.innerHTML="";}
 
-
-function clearDebug(){
-
-  debugContent.innerHTML = "";
-
-}
-
-
-/* =========================================================
-   CREATE ROOM
-========================================================= */
-
-document.getElementById("buatBtn").onclick =
-async function(){
-
-  role = "host";
-
-  roomCode = buatKode();
-
-  await masukRoom();
-
+/* ========================= BUTTONS ========================= */
+document.getElementById("buatBtn").onclick=async()=>{role="host";roomCode=buatKode();await masukRoom();};
+document.getElementById("gabungBtn").onclick=async()=>{
+const kode=document.getElementById("kodeInput").value.trim().toUpperCase();
+if(kode.length!==6){alert("Kode room harus 6 karakter.");return;}
+role="guest";roomCode=kode;await masukRoom();
 };
 
-
-/* =========================================================
-   JOIN ROOM
-========================================================= */
-
-document.getElementById("gabungBtn").onclick =
-async function(){
-
-  const kode =
-  document
-  .getElementById("kodeInput")
-  .value
-  .trim()
-  .toUpperCase();
-
-  if(kode.length !== 6){
-
-    alert("Kode room harus 6 karakter.");
-
-    return;
-
-  }
-
-  role = "guest";
-
-  roomCode = kode;
-
-  await masukRoom();
-
-};
-
-
-/* =========================================================
-   FORCE PLAY
-========================================================= */
-
+/* ========================= PLAY ========================= */
 function paksaPlayVideo(){
-
-  videoLeft.play()
-  .catch(()=>{});
-
-  videoRight.play()
-  .catch(()=>{});
-
+videoLeft.play().catch(()=>{});
+videoRight.play().catch(()=>{});
 }
 
-
-/* =========================================================
-   MASUK ROOM
-========================================================= */
-
+/* ========================= JOIN ========================= */
 async function masukRoom(){
-
-  setup.classList.add("hidden");
-
-  roomInfo.innerHTML =
-  "ROOM: <b>"+roomCode+
-  "</b> ("+
-  role.toUpperCase()+
-  ")";
-
-  copyRoom.classList.remove("hidden");
-
-  infoBtn.classList.remove("hidden");
-
-  debugBox.classList.remove("hidden");
-
-  status.innerText =
-  "Meminta izin kamera...";
-
-  clearDebug();
-
-  debug(
-    "Role: "+role,
-    "good"
-  );
-
-  debug(
-    "Room: "+roomCode
-  );
-
-  debug(
-    "Mode: DIRECT WEBRTC, tanpa TURN",
-    "good"
-  );
-
-
-  /* CAMERA */
-
-  try{
-
-    localStream =
-    await navigator.mediaDevices.getUserMedia({
-
-      video:{
-        facingMode:"user",
-
-        width:{
-          ideal:1280,
-          max:1920
-        },
-
-        height:{
-          ideal:720,
-          max:1080
-        },
-
-        frameRate:{
-          ideal:30,
-          max:30
-        }
-      },
-
-      audio:false
-
-    });
-
-    debug(
-      "Kamera lokal berhasil dibuka.",
-      "good"
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    status.innerText =
-    "❌ Kamera gagal diakses.";
-
-    debug(
-      "Kamera error: "+error.message,
-      "bad"
-    );
-
-    alert(
-      "Kamera tidak bisa dibuka.\n\n"+
-      "Pastikan izin kamera diberikan dan halaman dibuka melalui HTTPS."
-    );
-
-    return;
-
-  }
-
-
-  /* LOCAL VIDEO */
-
-  if(role==="host"){
-
-    videoLeft.srcObject =
-    localStream;
-
-    videoLeft.className =
-    "localVideo";
-
-    labelLeft.innerText =
-    "KAMU (HOST)";
-
-    labelRight.innerText =
-    "PASANGAN (GUEST)";
-
-    badgeLeft.innerText =
-    "📱 Kamera lokal";
-
-    fotoBtn.classList.remove("hidden");
-
-  }else{
-
-    videoRight.srcObject =
-    localStream;
-
-    videoRight.className =
-    "localVideo";
-
-    labelLeft.innerText =
-    "PASANGAN (HOST)";
-
-    labelRight.innerText =
-    "KAMU (GUEST)";
-
-    badgeRight.innerText =
-    "📱 Kamera lokal";
-
-    fotoBtn.classList.add("hidden");
-
-  }
-
-
-  cameras.classList.remove("hidden");
-
-  effectArea.classList.remove("hidden");
-
-  aiArea.classList.remove("hidden");
-
-
-  /* CREATE PEER */
-
-  buatPeer();
-
-
-  /* SUPABASE */
-
-  channel =
-  supabaseClient.channel(
-    "mini-ldr-room-"+roomCode,
-    {
-      config:{
-        broadcast:{
-          self:false
-        }
-      }
-    }
-  );
-
-
-  channel.on(
-    "broadcast",
-    {
-      event:"signal"
-    },
-    async msg => {
-
-      await prosesSignal(
-        msg.payload
-      );
-
-    }
-  );
-
-
-  channel.subscribe(
-    async state => {
-
-      debug(
-        "Supabase: "+state
-      );
-
-      if(state==="SUBSCRIBED"){
-
-        status.innerText =
-        "🟢 Room aktif. Mencari pasangan...";
-
-        debug(
-          "Signaling Supabase tersambung.",
-          "good"
-        );
-
-        mulaiKirimReady();
-
-      }
-
-    }
-  );
-
+setup.classList.add("hidden");
+roomInfo.innerHTML=`ROOM: <b>${roomCode}</b> (${role.toUpperCase()})`;
+copyRoom.classList.remove("hidden");infoBtn.classList.remove("hidden");debugBox.classList.remove("hidden");
+status.innerText="Meminta izin kamera...";
+clearDebug();
+
+debug("V5 session: "+sessionId,"good");
+debug("Client ID: "+clientId.slice(0,8));
+debug("Role: "+role,"good");
+debug("Room: "+roomCode);
+debug("Mode: DIRECT WEBRTC, tanpa TURN","good");
+
+try{
+localStream=await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"user",width:{ideal:1280,max:1920},height:{ideal:720,max:1080},frameRate:{ideal:30,max:30}},
+audio:false
+});
+debug("Kamera lokal berhasil dibuka.","good");
+}catch(error){
+status.innerText="❌ Kamera gagal diakses.";
+debug("Kamera error: "+error.message,"bad");
+alert("Kamera tidak bisa dibuka.\n\nPastikan izin kamera diberikan dan halaman dibuka melalui HTTPS.");
+return;
 }
 
-
-/* =========================================================
-   READY LOOP
-========================================================= */
-
-function mulaiKirimReady(){
-
-  if(readyTimer){
-
-    clearInterval(
-      readyTimer
-    );
-
-  }
-
-  kirim({
-    type:"ready",
-    role:role
-  });
-
-
-  readyTimer =
-  setInterval(()=>{
-
-    if(
-      peer &&
-      peer.connectionState==="connected"
-    ){
-
-      clearInterval(
-        readyTimer
-      );
-
-      readyTimer = null;
-
-      return;
-
-    }
-
-    kirim({
-      type:"ready",
-      role:role
-    });
-
-  },1500);
-
+if(role==="host"){
+videoLeft.srcObject=localStream;videoLeft.className="localVideo";
+labelLeft.innerText="KAMU (HOST)";labelRight.innerText="PASANGAN (GUEST)";
+badgeLeft.innerText="📱 Kamera lokal";fotoBtn.classList.remove("hidden");
+}else{
+videoRight.srcObject=localStream;videoRight.className="localVideo";
+labelLeft.innerText="PASANGAN (HOST)";labelRight.innerText="KAMU (GUEST)";
+badgeRight.innerText="📱 Kamera lokal";fotoBtn.classList.add("hidden");
 }
+cameras.classList.remove("hidden");effectArea.classList.remove("hidden");aiArea.classList.remove("hidden");
 
+buatPeer();
 
-/* =========================================================
-   COPY ROOM
-========================================================= */
-
-copyRoom.onclick =
-async function(){
-
-  try{
-
-    await navigator.clipboard
-    .writeText(roomCode);
-
-    alert(
-      "Kode room:\n"+roomCode
-    );
-
-  }catch(e){
-
-    prompt(
-      "Salin kode:",
-      roomCode
-    );
-
-  }
-
-};
-
-
-/* =========================================================
-   CREATE PEER
-========================================================= */
-
-function buatPeer(){
-
-  if(peer){
-
-    try{
-      peer.close();
-    }catch(e){}
-
-  }
-
-
-  pendingCandidates = [];
-
-
-  peer =
-  new RTCPeerConnection({
-
-    iceServers:ICE_SERVERS,
-
-    iceTransportPolicy:"all",
-
-    bundlePolicy:"max-bundle",
-
-    rtcpMuxPolicy:"require"
-
-  });
-
-
-  debug(
-    "RTCPeerConnection dibuat."
-  );
-
-
-  /* LOCAL TRACKS */
-
-  localStream
-  .getTracks()
-  .forEach(track=>{
-
-    peer.addTrack(
-      track,
-      localStream
-    );
-
-  });
-
-
-  /* REMOTE TRACK */
-
-  peer.ontrack =
-  event => {
-
-    debug(
-      "REMOTE TRACK diterima.",
-      "good"
-    );
-
-    const remoteStream =
-    event.streams[0];
-
-    if(!remoteStream){
-
-      debug(
-        "Remote stream kosong.",
-        "bad"
-      );
-
-      return;
-
-    }
-
-
-    const targetVideo =
-    role==="host"
-    ? videoRight
-    : videoLeft;
-
-
-    if(
-      targetVideo.srcObject !==
-      remoteStream
-    ){
-
-      targetVideo.srcObject =
-      remoteStream;
-
-    }
-
-
-    targetVideo.className =
-    "remoteVideo";
-
-
-    targetVideo.onloadedmetadata =
-    async ()=>{
-
-      debug(
-        "Remote video metadata siap.",
-        "good"
-      );
-
-      try{
-
-        await targetVideo.play();
-
-        debug(
-          "Remote video PLAY.",
-          "good"
-        );
-
-      }catch(error){
-
-        debug(
-          "Autoplay ditolak. Tap video.",
-          "warn"
-        );
-
-      }
-
-    };
-
-
-    targetVideo.onplaying =
-    ()=>{
-
-      connectedOnce = true;
-
-      if(role==="host"){
-
-        badgeRight.innerText =
-        "🟢 PASANGAN ONLINE";
-
-      }else{
-
-        badgeLeft.innerText =
-        "🟢 PASANGAN ONLINE";
-
-      }
-
-    };
-
-
-    targetVideo.onwaiting =
-    ()=>{
-
-      debug(
-        "Remote video buffering...",
-        "warn"
-      );
-
-    };
-
-
-    targetVideo.onerror =
-    ()=>{
-      debug(
-        "Remote video error.",
-        "bad"
-      );
-    };
-
-
-    paksaPlayVideo();
-
-  };
-
-
-  /* ICE CANDIDATE */
-
-  peer.onicecandidate =
-  async event => {
-
-    if(event.candidate){
-
-      debug(
-        "ICE candidate: "+
-        event.candidate.type
-      );
-
-      await kirim({
-
-        type:"candidate",
-
-        candidate:
-        event.candidate.toJSON(),
-
-        sender:role
-
-      });
-
-    }
-
-  };
-
-
-  /* ICE GATHERING */
-
-  peer.onicegatheringstatechange =
-  ()=>{
-    debug(
-      "ICE gathering: "+
-      peer.iceGatheringState
-    );
-  };
-
-
-  /* ICE CONNECTION */
-
-  peer.oniceconnectionstatechange =
-  async ()=>{
-
-    const state =
-    peer.iceConnectionState;
-
-    debug(
-      "ICE connection: "+state,
-      state==="connected"
-      ? "good"
-      : state==="failed"
-      ? "bad"
-      : "warn"
-    );
-
-
-    if(state==="checking"){
-
-      status.innerText =
-      "🟡 Mencari jalur langsung...";
-
-    }
-
-
-    if(
-      state==="connected" ||
-      state==="completed"
-    ){
-
-      status.innerText =
-      "🟢 Koneksi langsung berhasil!";
-
-      updateBadge(
-        "🟢 DIRECT CONNECTED"
-      );
-
-      ambilStats();
-
-    }
-
-
-    if(state==="disconnected"){
-
-      status.innerText =
-      "🟠 Koneksi terputus sementara...";
-
-      scheduleIceRestart();
-
-    }
-
-
-    if(state==="failed"){
-
-      status.innerText =
-      "🔴 Direct WebRTC gagal.";
-
-      updateBadge(
-        "🔴 DIRECT FAILED"
-      );
-
-      debug(
-        "ICE FAILED. Mencoba ICE restart...",
-        "bad"
-      );
-
-      scheduleIceRestart();
-
-    }
-
-  };
-
-
-  /* CONNECTION */
-
-  peer.onconnectionstatechange =
-  ()=>{
-
-    const state =
-    peer.connectionState;
-
-    debug(
-      "Peer connection: "+state
-    );
-
-
-    if(state==="connected"){
-
-      status.innerText =
-      "🟢 PASANGAN TERHUBUNG!";
-
-      updateBadge(
-        "🟢 VIDEO TERHUBUNG"
-      );
-
-      connectedOnce = true;
-
-    }
-
-
-    if(state==="connecting"){
-
-      status.innerText =
-      "🟡 Menghubungkan video...";
-
-    }
-
-
-    if(
-      state==="failed"
-    ){
-
-      status.innerText =
-      "🔴 Koneksi WebRTC gagal.";
-
-      scheduleIceRestart();
-
-    }
-
-  };
-
-
-  peer.onsignalingstatechange =
-  ()=>{
-    debug(
-      "Signaling: "+
-      peer.signalingState
-    );
-  };
-
-
-  peer.onicecandidateerror =
-  event => {
-
-    debug(
-      "ICE candidate error: "+
-      event.errorCode+
-      " "+
-      (event.errorText||""),
-      "bad"
-    );
-
-  };
-
-}
-
-
-/* =========================================================
-   BADGE
-========================================================= */
-
-function updateBadge(text){
-
-  if(role==="host"){
-
-    badgeRight.innerText =
-    text;
-
-  }else{
-
-    badgeLeft.innerText =
-    text;
-
-  }
-
-}
-
-
-/* =========================================================
-   SIGNALING SEND
-========================================================= */
-
-async function kirim(data){
-
-  if(!channel){
-
-    return;
-
-  }
-
-  try{
-
-    await channel.send({
-
-      type:"broadcast",
-
-      event:"signal",
-
-      payload:data
-
-    });
-
-  }catch(error){
-
-    debug(
-      "Signal gagal: "+
-      error.message,
-      "bad"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   SIGNAL PROCESS
-========================================================= */
-
-async function prosesSignal(data){
-
-  if(!peer){
-
-    return;
-
-  }
-
-
-  try{
-
-    /* READY */
-
-    if(data.type==="ready"){
-
-      debug(
-        "READY diterima dari "+
-        data.role
-      );
-
-
-      if(
-        role==="host" &&
-        data.role==="guest"
-      ){
-
-        await buatOffer();
-
-      }
-
-      return;
-
-    }
-
-
-    /* OFFER */
-
-    if(
-      data.type==="offer" &&
-      role==="guest"
-    ){
-
-      debug(
-        "OFFER diterima.",
-        "good"
-      );
-
-
-      if(
-        peer.signalingState!=="stable"
-      ){
-
-        debug(
-          "Signaling belum stable, offer dilewati.",
-          "warn"
-        );
-
-        return;
-
-      }
-
-
-      await peer.setRemoteDescription(
-        new RTCSessionDescription(
-          data.sdp
-        )
-      );
-
-
-      await prosesPendingCandidates();
-
-
-      const answer =
-      await peer.createAnswer();
-
-
-      await peer.setLocalDescription(
-        answer
-      );
-
-
-      await kirim({
-
-        type:"answer",
-
-        sdp:peer.localDescription,
-
-        sender:role
-
-      });
-
-
-      debug(
-        "ANSWER dikirim.",
-        "good"
-      );
-
-      return;
-
-    }
-
-
-    /* ANSWER */
-
-    if(
-      data.type==="answer" &&
-      role==="host"
-    ){
-
-      debug(
-        "ANSWER diterima.",
-        "good"
-      );
-
-
-      if(
-        peer.signalingState!=="have-local-offer"
-      ){
-
-        debug(
-          "Answer tidak sesuai signaling state.",
-          "warn"
-        );
-
-        return;
-
-      }
-
-
-      await peer.setRemoteDescription(
-        new RTCSessionDescription(
-          data.sdp
-        )
-      );
-
-
-      await prosesPendingCandidates();
-
-      return;
-
-    }
-
-
-    /* ICE CANDIDATE */
-
-    if(data.type==="candidate"){
-
-      const candidate =
-      new RTCIceCandidate(
-        data.candidate
-      );
-
-
-      if(
-        peer.remoteDescription &&
-        peer.remoteDescription.type
-      ){
-
-        try{
-
-          await peer.addIceCandidate(
-            candidate
-          );
-
-          debug(
-            "ICE candidate ditambahkan."
-          );
-
-        }catch(error){
-
-          debug(
-            "addIceCandidate error: "+
-            error.message,
-            "bad"
-          );
-
-        }
-
-      }else{
-
-        pendingCandidates.push(
-          candidate
-        );
-
-        debug(
-          "ICE candidate disimpan sementara."
-        );
-
-      }
-
-      return;
-
-    }
-
-
-    /* PHOTO */
-
-    if(
-      data.type==="photo" &&
-      !capturing
-    ){
-
-      capturing = true;
-
-      tampilkanToast(
-        "📸 Host mengambil foto!"
-      );
-
-      await ambilFoto();
-
-      capturing = false;
-
-      return;
-
-    }
-
-
-    /* RESET */
-
-    if(data.type==="reset"){
-
-      photoFrames = [];
-
-      renderPhotoboothStrip();
-
-      return;
-
-    }
-
-  }catch(error){
-
-    console.error(
-      "Signal Error:",
-      error
-    );
-
-    debug(
-      "Signal error: "+
-      error.message,
-      "bad"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   CREATE OFFER
-========================================================= */
-
-async function buatOffer(){
-
-  if(!peer) return;
-
-
-  if(
-    peer.signalingState!=="stable"
-  ){
-
-    debug(
-      "Tidak membuat offer karena signaling belum stable.",
-      "warn"
-    );
-
-    return;
-
-  }
-
-
-  try{
-
-    debug(
-      "Membuat OFFER..."
-    );
-
-
-    const offer =
-    await peer.createOffer({
-
-      offerToReceiveVideo:true
-
-    });
-
-
-    await peer.setLocalDescription(
-      offer
-    );
-
-
-    await kirim({
-
-      type:"offer",
-
-      sdp:peer.localDescription,
-
-      sender:role
-
-    });
-
-
-    debug(
-      "OFFER dikirim ke guest.",
-      "good"
-    );
-
-  }catch(error){
-
-    debug(
-      "Offer error: "+
-      error.message,
-      "bad"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   PENDING ICE
-========================================================= */
-
-async function prosesPendingCandidates(){
-
-  while(
-    pendingCandidates.length
-  ){
-
-    const candidate =
-    pendingCandidates.shift();
-
-    try{
-
-      await peer.addIceCandidate(
-        candidate
-      );
-
-    }catch(error){
-
-      debug(
-        "Pending ICE error: "+
-        error.message,
-        "bad"
-      );
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   ICE RESTART
-========================================================= */
-
-function scheduleIceRestart(){
-
-  if(reconnectTimer){
-
-    return;
-
-  }
-
-
-  reconnectTimer =
-  setTimeout(
-    async ()=>{
-
-      reconnectTimer = null;
-
-      await restartIce();
-
-    },
-    1800
-  );
-
-}
-
-
-async function restartIce(){
-
-  if(!peer){
-
-    return;
-
-  }
-
-
-  if(
-    role!=="host"
-  ){
-
-    debug(
-      "Guest menunggu host melakukan ICE restart.",
-      "warn"
-    );
-
-    return;
-
-  }
-
-
-  try{
-
-    debug(
-      "Memulai ICE restart..."
-    );
-
-
-    const offer =
-    await peer.createOffer({
-      iceRestart:true
-    });
-
-
-    await peer.setLocalDescription(
-      offer
-    );
-
-
-    await kirim({
-
-      type:"offer",
-
-      sdp:peer.localDescription,
-
-      sender:role,
-
-      restart:true
-
-    });
-
-
-    debug(
-      "ICE restart OFFER dikirim.",
-      "good"
-    );
-
-  }catch(error){
-
-    debug(
-      "ICE restart gagal: "+
-      error.message,
-      "bad"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   WEBRTC STATS
-========================================================= */
-
-async function ambilStats(){
-
-  if(!peer) return;
-
-  try{
-
-    const stats =
-    await peer.getStats();
-
-    let found = false;
-
-    stats.forEach(report=>{
-
-      if(
-        report.type==="candidate-pair" &&
-        report.state==="succeeded"
-      ){
-
-        found = true;
-
-        debug(
-          "Candidate pair berhasil: "+
-          (report.protocol||"unknown"),
-          "good"
-        );
-
-      }
-
-    });
-
-    if(!found){
-
-      debug(
-        "Candidate pair belum tersedia."
-      );
-
-    }
-
-  }catch(error){
-
-    debug(
-      "Stats error: "+
-      error.message
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   INFO CONNECTION BUTTON
-========================================================= */
-
-infoBtn.onclick =
-async function(){
-
-  debugBox.classList.remove(
-    "hidden"
-  );
-
-  await ambilStats();
-
-  if(!peer){
-
-    debug(
-      "Peer belum dibuat.",
-      "bad"
-    );
-
-    return;
-
-  }
-
-  debug(
-    "ICE state: "+
-    peer.iceConnectionState
-  );
-
-  debug(
-    "Connection state: "+
-    peer.connectionState
-  );
-
-  debug(
-    "Signaling state: "+
-    peer.signalingState
-  );
-
-  debug(
-    "ICE gathering: "+
-    peer.iceGatheringState
-  );
-
-};
-
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-function tampilkanToast(pesan){
-
-  toastNotification.innerText =
-  pesan;
-
-  toastNotification.classList.remove(
-    "hidden"
-  );
-
-  setTimeout(
-    ()=>{
-      toastNotification.classList.add(
-        "hidden"
-      );
-    },
-    2500
-  );
-
-}
-
-
-/* =========================================================
-   FOTO
-========================================================= */
-
-fotoBtn.onclick =
-async function(){
-
-  if(role!=="host") return;
-
-
-  if(
-    photoFrames.length>=MAX_PHOTOS
-  ){
-
-    alert(
-      "📸 Photobooth sudah penuh! Klik Reset untuk mengulang."
-    );
-
-    return;
-
-  }
-
-
-  if(capturing) return;
-
-  capturing = true;
-
-
-  await kirim({
-    type:"photo"
-  });
-
-
-  await ambilFoto();
-
-
-  capturing = false;
-
-};
-
-
-async function ambilFoto(){
-
-  countdown.classList.remove(
-    "hidden"
-  );
-
-
-  for(
-    let i=3;
-    i>=1;
-    i--
-  ){
-
-    countdown.innerText =
-    i;
-
-    await tunggu(700);
-
-  }
-
-
-  countdown.innerText =
-  "📸";
-
-  await tunggu(300);
-
-  countdown.classList.add(
-    "hidden"
-  );
-
-
-  simpanFrame();
-
-}
-
-
-function tunggu(ms){
-
-  return new Promise(
-    resolve =>
-    setTimeout(resolve,ms)
-  );
-
-}
-
-
-/* =========================================================
-   EFFECT
-========================================================= */
-
-document
-.querySelectorAll(".effects button")
-.forEach(btn=>{
-
-  btn.onclick = ()=>{
-
-    currentEffect =
-    btn.dataset.fx;
-
-    videoLeft.className =
-    currentEffect;
-
-    videoRight.className =
-    currentEffect;
-
-
-    if(
-      role==="host"
-    ){
-
-      videoLeft.classList.add(
-        "localVideo"
-      );
-
-    }else{
-
-      videoRight.classList.add(
-        "localVideo"
-      );
-
-    }
-
-
-    document
-    .querySelectorAll(
-      ".effects button"
-    )
-    .forEach(b=>
-      b.classList.remove("active")
-    );
-
-
-    btn.classList.add(
-      "active"
-    );
-
-
-    effectName.innerText =
-    "Efek: "+btn.innerText;
-
-  };
-
+channel=supabaseClient.channel("mini-ldr-room-"+roomCode,{
+config:{broadcast:{self:false}}
 });
 
+channel.on("broadcast",{event:"signal"},async msg=>{
+const data=msg.payload||{};
+await prosesSignal(data);
+});
 
-/* =========================================================
-   AI PROMPT
-========================================================= */
+channel.subscribe(async state=>{
+debug("Supabase: "+state,state==="SUBSCRIBED"?"good":"warn");
+if(state==="SUBSCRIBED"){
+status.innerText="🟢 Room aktif. Mencari pasangan...";
+debug("Supabase signaling tersambung.","good");
+await tunggu(300);
+mulaiKirimReady();
+}
+});
+}
 
-document.getElementById("aiBtn")
-.onclick = function(){
+/* ========================= READY HANDSHAKE ========================= */
+function mulaiKirimReady(){
+if(readyTimer)clearInterval(readyTimer);
 
-  currentPrompt =
-  aiPrompt.value.trim();
+kirim({type:"ready",from:clientId,role,sessionId});
 
+readyTimer=setInterval(()=>{
+if(peer&&(peer.connectionState==="connected"||peer.iceConnectionState==="connected"||peer.iceConnectionState==="completed")){
+clearInterval(readyTimer);readyTimer=null;return;
+}
+kirim({type:"ready",from:clientId,role,sessionId});
+},1000);
+}
 
-  aiPreview.innerHTML =
-  currentPrompt
-  ? "🤖 Konsep AI: <b>"+
-    escapeHTML(currentPrompt)+
-    "</b>"
-  : "Prompt belum digunakan.";
-
+/* ========================= COPY ========================= */
+copyRoom.onclick=async()=>{
+try{await navigator.clipboard.writeText(roomCode);alert("Kode room:\n"+roomCode);}
+catch(e){prompt("Salin kode:",roomCode);}
 };
 
+/* ========================= PEER ========================= */
+function buatPeer(){
+if(peer){try{peer.close();}catch(e){}}
+pendingCandidates=[];remoteStream=null;connectedOnce=false;
 
+peer=new RTCPeerConnection({
+iceServers:ICE_SERVERS,
+iceTransportPolicy:"all",
+bundlePolicy:"max-bundle",
+rtcpMuxPolicy:"require"
+});
+
+debug("RTCPeerConnection dibuat.");
+
+localStream.getTracks().forEach(track=>peer.addTrack(track,localStream));
+
+peer.ontrack=event=>{
+debug("REMOTE TRACK diterima.","good");
+const targetVideo=role==="host"?videoRight:videoLeft;
+
+if(!remoteStream)remoteStream=new MediaStream();
+if(!remoteStream.getTracks().some(t=>t.id===event.track.id))remoteStream.addTrack(event.track);
+
+targetVideo.srcObject=remoteStream;
+targetVideo.className="remoteVideo";
+
+event.track.onunmute=()=>debug("Remote track aktif (unmute).","good");
+event.track.onmute=()=>debug("Remote track mute.","warn");
+event.track.onended=()=>debug("Remote track ended.","warn");
+
+targetVideo.onloadedmetadata=async()=>{
+debug("Remote video metadata siap.","good");
+try{await targetVideo.play();debug("Remote video PLAY.","good");}
+catch(e){debug("Autoplay ditolak. Tap video.","warn");}
+};
+targetVideo.onplaying=()=>{
+connectedOnce=true;
+if(role==="host")badgeRight.innerText="🟢 PASANGAN ONLINE";
+else badgeLeft.innerText="🟢 PASANGAN ONLINE";
+};
+targetVideo.onerror=()=>debug("Remote video error.","bad");
+paksaPlayVideo();
+};
+
+peer.onicecandidate=async event=>{
+if(event.candidate){
+debug("ICE candidate: "+event.candidate.type);
+await kirim({
+type:"candidate",
+from:clientId,
+to:getPeerTarget(),
+sessionId,
+candidate:event.candidate.toJSON()
+});
+}
+};
+
+peer.onicegatheringstatechange=()=>debug("ICE gathering: "+peer.iceGatheringState);
+
+peer.oniceconnectionstatechange=async()=>{
+const state=peer.iceConnectionState;
+debug("ICE connection: "+state,state==="connected"||state==="completed"?"good":state==="failed"?"bad":"warn");
+
+if(state==="checking")status.innerText="🟡 Mencari jalur langsung...";
+if(state==="connected"||state==="completed"){
+status.innerText="🟢 Koneksi langsung berhasil!";
+updateBadge("🟢 DIRECT CONNECTED");
+ambilStats();
+}
+if(state==="disconnected"){
+status.innerText="🟠 Koneksi terputus sementara...";
+scheduleIceRestart();
+}
+if(state==="failed"){
+status.innerText="🔴 Direct WebRTC gagal.";
+updateBadge("🔴 DIRECT FAILED");
+debug("ICE FAILED. Host akan mencoba ICE restart.","bad");
+scheduleIceRestart();
+}
+};
+
+peer.onconnectionstatechange=()=>{
+const state=peer.connectionState;
+debug("Peer connection: "+state,state==="connected"?"good":state==="failed"||state==="closed"?"bad":"");
+if(state==="connected"){
+status.innerText="🟢 PASANGAN TERHUBUNG!";
+updateBadge("🟢 VIDEO TERHUBUNG");connectedOnce=true;
+}
+if(state==="connecting")status.innerText="🟡 Menghubungkan video...";
+if(state==="failed"){status.innerText="🔴 Koneksi WebRTC gagal.";scheduleIceRestart();}
+};
+
+peer.onsignalingstatechange=()=>debug("Signaling: "+peer.signalingState);
+
+peer.onicecandidateerror=event=>{
+debug("ICE candidate error: "+event.errorCode+" "+(event.errorText||""),"bad");
+};
+}
+
+/* ========================= TARGET ========================= */
+function getPeerTarget(){
+return role==="host"?remoteClientId:hostClientId;
+}
+
+/* ========================= BADGE ========================= */
+function updateBadge(text){
+if(role==="host")badgeRight.innerText=text;else badgeLeft.innerText=text;
+}
+
+/* ========================= SIGNAL SEND ========================= */
+async function kirim(data){
+if(!channel)return;
+try{
+const payload={...data,from:data.from||clientId,sessionId:data.sessionId||sessionId};
+const result=await channel.send({type:"broadcast",event:"signal",payload});
+if(result&&result!=="ok"&&result.status&&result.status!=="ok")debug("Broadcast status: "+result.status,"warn");
+}catch(error){debug("Signal gagal: "+error.message,"bad");}
+}
+
+/* ========================= SIGNAL PROCESS ========================= */
+async function prosesSignal(data){
+if(!peer||!data||!data.type)return;
+if(data.from===clientId)return;
+if(data.sessionId!==sessionId&&data.type!=="ready"){
+debug("Sinyal beda session diabaikan.","warn");return;
+}
+
+try{
+/* READY */
+if(data.type==="ready"){
+debug("READY diterima dari "+data.role+" ["+(data.from||"").slice(0,8)+"]","good");
+
+if(data.role==="host"&&role==="guest"){
+hostClientId=data.from;
+debug("Host ID disimpan.","good");
+status.innerText="🟡 Host ditemukan. Menunggu OFFER...";
+}
+if(data.role==="guest"&&role==="host"){
+if(!remoteClientId){
+remoteClientId=data.from;
+debug("Guest ID disimpan.","good");
+}
+if(data.from===remoteClientId&&!offerInProgress&&peer.signalingState==="stable"){
+await buatOffer();
+}
+}
+return;
+}
+
+/* TARGET FILTER */
+if(data.to&&data.to!==clientId)return;
+if(data.from&&data.from===clientId)return;
+
+/* OFFER */
+if(data.type==="offer"&&role==="guest"){
+if(!hostClientId)hostClientId=data.from;
+if(data.from!==hostClientId)return;
+
+debug("OFFER diterima dari Host.","good");
+if(peer.signalingState!=="stable"){
+debug("Signaling belum stable, OFFER dilewati.","warn");return;
+}
+
+await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+await prosesPendingCandidates();
+
+const answer=await peer.createAnswer();
+await peer.setLocalDescription(answer);
+
+await kirim({
+type:"answer",to:hostClientId,from:clientId,sessionId,
+sdp:peer.localDescription
+});
+debug("ANSWER dikirim ke Host.","good");
+return;
+}
+
+/* ANSWER */
+if(data.type==="answer"&&role==="host"){
+if(!remoteClientId)remoteClientId=data.from;
+if(data.from!==remoteClientId)return;
+
+debug("ANSWER diterima dari Guest.","good");
+if(peer.signalingState!=="have-local-offer"){
+debug("Answer tidak sesuai signaling state.","warn");return;
+}
+await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+await prosesPendingCandidates();
+return;
+}
+
+/* ICE */
+if(data.type==="candidate"){
+if(data.to&&data.to!==clientId)return;
+if(data.from!==getPeerTarget())return;
+
+const candidate=new RTCIceCandidate(data.candidate);
+if(peer.remoteDescription&&peer.remoteDescription.type){
+try{await peer.addIceCandidate(candidate);debug("ICE candidate ditambahkan.");}
+catch(error){debug("addIceCandidate error: "+error.message,"bad");}
+}else{
+pendingCandidates.push(candidate);
+debug("ICE candidate disimpan sementara.");
+}
+return;
+}
+
+/* PHOTO */
+if(data.type==="photo"&&!capturing){
+capturing=true;tampilkanToast("📸 Host mengambil foto!");
+await ambilFoto();capturing=false;return;
+}
+
+/* RESET */
+if(data.type==="reset"){
+photoFrames=[];renderPhotoboothStrip();return;
+}
+}catch(error){
+console.error("Signal Error:",error);
+debug("Signal error: "+error.message,"bad");
+}
+}
+
+/* ========================= OFFER ========================= */
+async function buatOffer(){
+if(!peer||role!=="host"||!remoteClientId||offerInProgress)return;
+if(peer.signalingState!=="stable"){
+debug("Host belum stable, OFFER ditunda.","warn");return;
+}
+offerInProgress=true;
+try{
+debug("Membuat OFFER untuk Guest "+remoteClientId.slice(0,8)+"...");
+const offer=await peer.createOffer({offerToReceiveVideo:true});
+await peer.setLocalDescription(offer);
+await kirim({
+type:"offer",to:remoteClientId,from:clientId,sessionId,
+sdp:peer.localDescription
+});
+debug("OFFER dikirim ke Guest.","good");
+
+if(offerTimer)clearTimeout(offerTimer);
+offerTimer=setTimeout(()=>{
+if(peer&&peer.signalingState==="have-local-offer"){
+debug("Belum menerima ANSWER. Host akan menunggu READY berikutnya.","warn");
+}
+offerTimer=null;
+},5000);
+}catch(error){
+debug("Offer error: "+error.message,"bad");
+}finally{
+offerInProgress=false;
+}
+}
+
+/* ========================= PENDING ICE ========================= */
+async function prosesPendingCandidates(){
+while(pendingCandidates.length){
+const candidate=pendingCandidates.shift();
+try{await peer.addIceCandidate(candidate);debug("Pending ICE ditambahkan.");}
+catch(error){debug("Pending ICE error: "+error.message,"bad");}
+}
+}
+
+/* ========================= ICE RESTART ========================= */
+function scheduleIceRestart(){
+if(reconnectTimer||role!=="host"||!remoteClientId)return;
+reconnectTimer=setTimeout(async()=>{
+reconnectTimer=null;
+await restartIce();
+},2200);
+}
+
+async function restartIce(){
+if(!peer||role!=="host"||!remoteClientId)return;
+if(peer.signalingState!=="stable"){
+debug("ICE restart ditunda karena signaling belum stable.","warn");return;
+}
+try{
+debug("Memulai ICE restart...");
+const offer=await peer.createOffer({iceRestart:true});
+await peer.setLocalDescription(offer);
+await kirim({
+type:"offer",to:remoteClientId,from:clientId,sessionId,
+sdp:peer.localDescription,restart:true
+});
+debug("ICE restart OFFER dikirim.","good");
+}catch(error){debug("ICE restart gagal: "+error.message,"bad");}
+}
+
+/* ========================= STATS ========================= */
+async function ambilStats(){
+if(!peer)return;
+try{
+const stats=await peer.getStats();
+let found=false;
+stats.forEach(report=>{
+if(report.type==="candidate-pair"&&(report.state==="succeeded"||report.state==="in-progress")){
+if(report.state==="succeeded"){
+found=true;
+debug("Candidate pair berhasil: "+(report.protocol||"unknown")+" / "+(report.candidateType||"unknown"),"good");
+}
+}
+});
+if(!found)debug("Candidate pair belum tersedia.");
+}catch(error){debug("Stats error: "+error.message);}
+}
+
+/* ========================= INFO ========================= */
+infoBtn.onclick=async()=>{
+debugBox.classList.remove("hidden");
+await ambilStats();
+if(!peer){debug("Peer belum dibuat.","bad");return;}
+debug("Client ID: "+clientId.slice(0,8));
+debug("Host ID: "+(hostClientId?hostClientId.slice(0,8):"-"));
+debug("Guest ID: "+(remoteClientId?remoteClientId.slice(0,8):"-"));
+debug("ICE state: "+peer.iceConnectionState);
+debug("Connection state: "+peer.connectionState);
+debug("Signaling state: "+peer.signalingState);
+debug("ICE gathering: "+peer.iceGatheringState);
+debug("Remote description: "+(peer.remoteDescription?peer.remoteDescription.type:"BELUM ADA"),peer.remoteDescription?"good":"warn");
+};
+
+/* ========================= TOAST ========================= */
+function tampilkanToast(pesan){
+toastNotification.innerText=pesan;toastNotification.classList.remove("hidden");
+setTimeout(()=>toastNotification.classList.add("hidden"),2500);
+}
+
+/* ========================= PHOTO ========================= */
+fotoBtn.onclick=async()=>{
+if(role!=="host")return;
+if(photoFrames.length>=MAX_PHOTOS){alert("📸 Photobooth sudah penuh! Klik Reset untuk mengulang.");return;}
+if(capturing)return;
+capturing=true;
+await kirim({type:"photo",to:remoteClientId});
+await ambilFoto();
+capturing=false;
+};
+
+async function ambilFoto(){
+countdown.classList.remove("hidden");
+for(let i=3;i>=1;i--){countdown.innerText=i;await tunggu(700);}
+countdown.innerText="📸";await tunggu(300);countdown.classList.add("hidden");simpanFrame();
+}
+function tunggu(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+
+/* ========================= EFFECT ========================= */
+document.querySelectorAll(".effects button").forEach(btn=>{
+btn.onclick=()=>{
+currentEffect=btn.dataset.fx;
+videoLeft.className=currentEffect;videoRight.className=currentEffect;
+if(role==="host")videoLeft.classList.add("localVideo");else videoRight.classList.add("localVideo");
+document.querySelectorAll(".effects button").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");effectName.innerText="Efek: "+btn.innerText;
+};
+});
+
+/* ========================= AI ========================= */
+document.getElementById("aiBtn").onclick=function(){
+currentPrompt=aiPrompt.value.trim();
+aiPreview.innerHTML=currentPrompt?"🤖 Konsep AI: <b>"+escapeHTML(currentPrompt)+"</b>":"Prompt belum digunakan.";
+};
 function escapeHTML(t){
-
-  return t
-  .replace(/&/g,"&amp;")
-  .replace(/</g,"&lt;")
-  .replace(/>/g,"&gt;");
-
+return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-
-/* =========================================================
-   DRAW COVER
-========================================================= */
-
-function drawCoverImage(
-  ctx,
-  img,
-  x,
-  y,
-  w,
-  h,
-  mirror=false
-){
-
-  const imgW =
-  img.videoWidth ||
-  img.width;
-
-  const imgH =
-  img.videoHeight ||
-  img.height;
-
-
-  if(!imgW || !imgH){
-
-    return;
-
-  }
-
-
-  const imgRatio =
-  imgW/imgH;
-
-  const targetRatio =
-  w/h;
-
-
-  let sW,sH,sX,sY;
-
-
-  if(
-    imgRatio>targetRatio
-  ){
-
-    sH=imgH;
-
-    sW=
-    imgH*targetRatio;
-
-    sX=
-    (imgW-sW)/2;
-
-    sY=0;
-
-  }else{
-
-    sW=imgW;
-
-    sH=
-    imgW/targetRatio;
-
-    sX=0;
-
-    sY=
-    (imgH-sH)/2;
-
-  }
-
-
-  ctx.save();
-
-
-  if(mirror){
-
-    ctx.translate(
-      x+w,
-      y
-    );
-
-    ctx.scale(
-      -1,
-      1
-    );
-
-  }else{
-
-    ctx.translate(
-      x,
-      y
-    );
-
-  }
-
-
-  ctx.drawImage(
-    img,
-    sX,
-    sY,
-    sW,
-    sH,
-    0,
-    0,
-    w,
-    h
-  );
-
-
-  ctx.restore();
-
+/* ========================= DRAW COVER ========================= */
+function drawCoverImage(ctx,img,x,y,w,h,mirror=false){
+const imgW=img.videoWidth||img.width,imgH=img.videoHeight||img.height;
+if(!imgW||!imgH)return;
+const imgRatio=imgW/imgH,targetRatio=w/h;
+let sW,sH,sX,sY;
+if(imgRatio>targetRatio){sH=imgH;sW=imgH*targetRatio;sX=(imgW-sW)/2;sY=0;}
+else{sW=imgW;sH=imgW/targetRatio;sX=0;sY=(imgH-sH)/2;}
+ctx.save();
+if(mirror){ctx.translate(x+w,y);ctx.scale(-1,1);}
+else ctx.translate(x,y);
+ctx.drawImage(img,sX,sY,sW,sH,0,0,w,h);
+ctx.restore();
 }
 
-
-/* =========================================================
-   SIMPAN FRAME
-========================================================= */
-
+/* ========================= SAVE FRAME ========================= */
 function simpanFrame(){
-
-  const W=800;
-
-  const H=450;
-
-
-  const canvas =
-  document.createElement(
-    "canvas"
-  );
-
-  canvas.width=W;
-
-  canvas.height=H;
-
-
-  const ctx =
-  canvas.getContext("2d");
-
-
-  ctx.fillStyle="#000";
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
-  );
-
-
-  const photoW=
-  W/2;
-
-  const photoH=
-  H;
-
-
-  ctx.filter =
-  getComputedStyle(
-    videoLeft
-  ).filter;
-
-
-  /* HOST / LEFT */
-
-  drawCoverImage(
-    ctx,
-    videoLeft,
-    0,
-    0,
-    photoW,
-    photoH,
-    role==="host"
-  );
-
-
-  /* GUEST / RIGHT */
-
-  drawCoverImage(
-    ctx,
-    videoRight,
-    photoW,
-    0,
-    photoW,
-    photoH,
-    role==="guest"
-  );
-
-
-  ctx.filter="none";
-
-
-  ctx.fillStyle="#fff";
-
-  ctx.fillRect(
-    photoW-1,
-    0,
-    2,
-    photoH
-  );
-
-
-  photoFrames.push(
-    canvas
-  );
-
-
-  renderPhotoboothStrip();
-
+const W=800,H=450,canvas=document.createElement("canvas");
+canvas.width=W;canvas.height=H;
+const ctx=canvas.getContext("2d");
+ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);
+const photoW=W/2,photoH=H;
+ctx.filter=getComputedStyle(videoLeft).filter;
+drawCoverImage(ctx,videoLeft,0,0,photoW,photoH,role==="host");
+drawCoverImage(ctx,videoRight,photoW,0,photoW,photoH,role==="guest");
+ctx.filter="none";
+ctx.fillStyle="#fff";ctx.fillRect(photoW-1,0,2,photoH);
+photoFrames.push(canvas);renderPhotoboothStrip();
 }
 
-
-/* =========================================================
-   GALLERY
-========================================================= */
-
+/* ========================= GALLERY ========================= */
 function renderPhotoboothStrip(){
-
-  gallery.innerHTML="";
-
-
-  photoCount.innerText =
-  photoFrames.length+
-  " / "+
-  MAX_PHOTOS+
-  " Pose";
-
-
-  if(
-    photoFrames.length===0
-  ){
-
-    gallery.innerHTML =
-    '<div class="emptyGallery">'+
-    'Belum ada foto.'+
-    '</div>';
-
-    galleryArea.classList.remove(
-      "hidden"
-    );
-
-    return;
-
-  }
-
-
-  galleryArea.classList.remove(
-    "hidden"
-  );
-
-
-  const padding=30;
-
-  const frameGap=20;
-
-  const frameW=800;
-
-  const frameH=450;
-
-  const footerH=140;
-
-
-  const stripW=
-  frameW+
-  (padding*2);
-
-
-  const stripH=
-  (frameH*
-  photoFrames.length)+
-  (frameGap*
-  (photoFrames.length-1))+
-  (padding*2)+
-  footerH;
-
-
-  const stripCanvas =
-  document.createElement(
-    "canvas"
-  );
-
-
-  stripCanvas.width=
-  stripW;
-
-  stripCanvas.height=
-  stripH;
-
-
-  const ctx =
-  stripCanvas.getContext(
-    "2d"
-  );
-
-
-  ctx.fillStyle="#fff";
-
-  ctx.fillRect(
-    0,
-    0,
-    stripW,
-    stripH
-  );
-
-
-  photoFrames.forEach(
-    (frame,idx)=>{
-
-      const startY =
-      padding+
-      (
-        idx*
-        (frameH+frameGap)
-      );
-
-
-      ctx.drawImage(
-        frame,
-        padding,
-        startY,
-        frameW,
-        frameH
-      );
-
-    }
-  );
-
-
-  const footerY =
-  stripH-footerH+20;
-
-
-  ctx.fillStyle="#111";
-
-  ctx.font=
-  "bold 32px Arial";
-
-  ctx.textAlign="center";
-
-
-  ctx.fillText(
-    "MINI LDR STUDIO",
-    stripW/2,
-    footerY+30
-  );
-
-
-  ctx.fillStyle="#666";
-
-  ctx.font=
-  "18px Arial";
-
-
-  const today =
-  new Date().toLocaleDateString(
-    "id-ID",
-    {
-      day:"numeric",
-      month:"short",
-      year:"numeric"
-    }
-  );
-
-
-  ctx.fillText(
-    today+
-    " • Room: "+
-    roomCode,
-    stripW/2,
-    footerY+65
-  );
-
-
-  if(currentPrompt){
-
-    ctx.fillStyle="#e53935";
-
-    ctx.font=
-    "italic 16px Arial";
-
-
-    ctx.fillText(
-      "AI Theme: "+
-      currentPrompt.slice(
-        0,
-        45
-      ),
-      stripW/2,
-      footerY+95
-    );
-
-  }
-
-
-  const stripDataURL =
-  stripCanvas.toDataURL(
-    "image/jpeg",
-    .95
-  );
-
-
-  const card =
-  document.createElement(
-    "div"
-  );
-
-
-  card.className=
-  "photoCard";
-
-
-  const img =
-  document.createElement(
-    "img"
-  );
-
-
-  img.src=
-  stripDataURL;
-
-
-  const actions =
-  document.createElement(
-    "div"
-  );
-
-
-  actions.className=
-  "photoActions";
-
-
-  const downloadBtn =
-  document.createElement(
-    "button"
-  );
-
-
-  downloadBtn.className=
-  "downloadBtn";
-
-
-  downloadBtn.innerText=
-  "💾 DOWNLOAD STRIP PHOTOBOOTH";
-
-
-  downloadBtn.onclick=()=>{
-
-    const a =
-    document.createElement(
-      "a"
-    );
-
-    a.href=
-    stripDataURL;
-
-    a.download=
-    `Photobooth_LDR_${roomCode}.jpg`;
-
-    a.click();
-
-  };
-
-
-  const printBtn =
-  document.createElement(
-    "button"
-  );
-
-
-  printBtn.className=
-  "printBtn";
-
-
-  printBtn.innerText=
-  "🖨️ CETAK STRIP";
-
-
-  printBtn.onclick=()=>{
-
-    printSheet.innerHTML=
-    `<img class="printStripPhoto"
-    src="${stripDataURL}">`;
-
-    window.print();
-
-  };
-
-
-  actions.appendChild(
-    downloadBtn
-  );
-
-  actions.appendChild(
-    printBtn
-  );
-
-  card.appendChild(
-    img
-  );
-
-  card.appendChild(
-    actions
-  );
-
-  gallery.appendChild(
-    card
-  );
-
+gallery.innerHTML="";
+photoCount.innerText=photoFrames.length+" / "+MAX_PHOTOS+" Pose";
+if(photoFrames.length===0){
+gallery.innerHTML='<div class="emptyGallery">Belum ada foto.</div>';
+galleryArea.classList.remove("hidden");return;
+}
+galleryArea.classList.remove("hidden");
+const padding=30,frameGap=20,frameW=800,frameH=450,footerH=140;
+const stripW=frameW+padding*2;
+const stripH=frameH*photoFrames.length+frameGap*(photoFrames.length-1)+padding*2+footerH;
+const stripCanvas=document.createElement("canvas");stripCanvas.width=stripW;stripCanvas.height=stripH;
+const ctx=stripCanvas.getContext("2d");
+ctx.fillStyle="#fff";ctx.fillRect(0,0,stripW,stripH);
+photoFrames.forEach((frame,idx)=>{
+const startY=padding+idx*(frameH+frameGap);
+ctx.drawImage(frame,padding,startY,frameW,frameH);
+});
+const footerY=stripH-footerH+20;
+ctx.fillStyle="#111";ctx.font="bold 32px Arial";ctx.textAlign="center";
+ctx.fillText("MINI LDR STUDIO",stripW/2,footerY+30);
+ctx.fillStyle="#666";ctx.font="18px Arial";
+const today=new Date().toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"});
+ctx.fillText(today+" • Room: "+roomCode,stripW/2,footerY+65);
+if(currentPrompt){
+ctx.fillStyle="#e53935";ctx.font="italic 16px Arial";
+ctx.fillText("AI Theme: "+currentPrompt.slice(0,45),stripW/2,footerY+95);
+}
+const stripDataURL=stripCanvas.toDataURL("image/jpeg",.95);
+const card=document.createElement("div");card.className="photoCard";
+const img=document.createElement("img");img.src=stripDataURL;
+const actions=document.createElement("div");actions.className="photoActions";
+const downloadBtn=document.createElement("button");downloadBtn.className="downloadBtn";downloadBtn.innerText="💾 DOWNLOAD STRIP PHOTOBOOTH";
+downloadBtn.onclick=()=>{const a=document.createElement("a");a.href=stripDataURL;a.download=`Photobooth_LDR_${roomCode}.jpg`;a.click();};
+const printBtn=document.createElement("button");printBtn.className="printBtn";printBtn.innerText="🖨️ CETAK STRIP";
+printBtn.onclick=()=>{printSheet.innerHTML=`<img class="printStripPhoto" src="${stripDataURL}">`;window.print();};
+actions.appendChild(downloadBtn);actions.appendChild(printBtn);card.appendChild(img);card.appendChild(actions);gallery.appendChild(card);
 }
 
-
-/* =========================================================
-   RESET
-========================================================= */
-
-resetBtn.onclick =
-async function(){
-
-  if(
-    photoFrames.length>0 &&
-    confirm(
-      "Hapus semua pose?"
-    )
-  ){
-
-    photoFrames=[];
-
-    renderPhotoboothStrip();
-
-
-    await kirim({
-      type:"reset"
-    });
-
-  }
-
+/* ========================= RESET ========================= */
+resetBtn.onclick=async()=>{
+if(photoFrames.length>0&&confirm("Hapus semua pose?")){
+photoFrames=[];renderPhotoboothStrip();await kirim({type:"reset",to:getPeerTarget()});
+}
 };
 
-
-/* =========================================================
-   BEFORE UNLOAD
-========================================================= */
-
-window.addEventListener(
-  "beforeunload",
-  ()=>{
-    
-    if(readyTimer){
-
-      clearInterval(
-        readyTimer
-      );
-
-    }
-
-    if(reconnectTimer){
-
-      clearTimeout(
-        reconnectTimer
-      );
-
-    }
-
-    if(peer){
-
-      try{
-        peer.close();
-      }catch(e){}
-
-    }
-
-    if(channel){
-
-      try{
-        supabaseClient.removeChannel(
-          channel
-        );
-      }catch(e){}
-
-    }
-
-  }
-);
-
+/* ========================= UNLOAD ========================= */
+window.addEventListener("beforeunload",()=>{
+if(readyTimer)clearInterval(readyTimer);
+if(reconnectTimer)clearTimeout(reconnectTimer);
+if(offerTimer)clearTimeout(offerTimer);
+if(peer){try{peer.close();}catch(e){}}
+if(channel){try{supabaseClient.removeChannel(channel);}catch(e){}}
+});
 </script>
-
 </body>
 </html>
