@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini LDR Studio - PeerJS Version</title>
+  <title>Mini LDR Studio - PeerJS Engine Fixed</title>
   
   <!-- Supabase Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -27,16 +27,17 @@
 
     /* ========================= KAMERA DISPLAY ========================= */
     .cameras{ display:grid; grid-template-columns:1fr 1fr; gap:5px }
-    .camera{ position:relative; width:100%; aspect-ratio:3/4; background:#111; overflow:hidden; border-radius:10px }
+    .camera{ position:relative; width:100%; aspect-ratio:3/4; background:#111; overflow:hidden; border-radius:10px; cursor:pointer }
     
     .camera video{ 
       position:absolute; inset:0; width:100%; height:100%; 
       object-fit: cover; 
       transform: scaleX(-1); 
       background: #000;
+      pointer-events: auto;
     }
 
-    .label{ position:absolute; top:7px; left:7px; z-index:5; background:#000b; padding:5px 8px; border-radius:6px; font-size:11px }
+    .label{ position:absolute; top:7px; left:7px; z-index:5; background:#000b; padding:5px 8px; border-radius:6px; font-size:11px; pointer-events:none }
 
     /* ========================= KONTROL ========================= */
     .controls{ margin-top:8px }
@@ -104,7 +105,7 @@
 
 <main>
   <h1>📸 Mini LDR Studio</h1>
-  <p>Studio foto jarak jauh • PeerJS Engine</p>
+  <p>Studio foto jarak jauh • Autoplay Fixed</p>
 
   <div id="setup">
     <button id="buatBtn">BUAT ROOM (HOST)</button>
@@ -120,11 +121,11 @@
 
   <!-- KAMERA DISPLAY -->
   <div id="cameras" class="cameras hidden">
-    <div class="camera">
+    <div class="camera" onclick="playAllVideos()">
       <div class="label" id="labelLeft">HOST</div>
       <video id="videoLeft" autoplay playsinline muted></video>
     </div>
-    <div class="camera">
+    <div class="camera" onclick="playAllVideos()">
       <div class="label" id="labelRight">GUEST</div>
       <video id="videoRight" autoplay playsinline muted></video>
     </div>
@@ -241,6 +242,11 @@ document.getElementById("gabungBtn").onclick = async function(){
   await masukRoom();
 };
 
+function playAllVideos() {
+  videoLeft.play().catch(e => console.log(e));
+  videoRight.play().catch(e => console.log(e));
+}
+
 /* ================================================== MASUK ROOM ================================================== */
 async function masukRoom(){
   setup.classList.add("hidden");
@@ -292,19 +298,24 @@ async function masukRoom(){
   });
 
   peer.on('open', (id) => {
-    status.innerText = "🟢 Terhubung ke Server Signalling. Menunggu pasangan...";
+    status.innerText = "🟢 Terhubung. Menunggu pasangan...";
     hubungkanSupabase();
   });
 
   peer.on('call', (call) => {
     currentCall = call;
-    call.answer(localStream); // Balas panggilan dengan kamera lokal
+    call.answer(localStream);
     
     call.on('stream', (remoteStream) => {
       status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
       const targetVideo = (role === "host") ? videoRight : videoLeft;
       targetVideo.srcObject = remoteStream;
-      targetVideo.play().catch(e => console.log("Auto play fix:", e));
+      
+      // Paksa pemutaran video saat metadata siap
+      targetVideo.onloadedmetadata = () => {
+        targetVideo.play().catch(e => console.log("Autoplay ditahan:", e));
+      };
+      playAllVideos();
     });
 
     call.on('close', () => {
@@ -329,7 +340,6 @@ function hubungkanSupabase(){
   
   channel.subscribe((state) => {
     if(state === "SUBSCRIBED"){
-      // Jika kita adalah Guest, kita inisiasi panggil Host via PeerJS
       if (role === "guest") {
         setTimeout(() => {
           panggilHost();
@@ -350,7 +360,11 @@ function panggilHost(){
   call.on('stream', (remoteStream) => {
     status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
     videoLeft.srcObject = remoteStream;
-    videoLeft.play().catch(e => console.log("Auto play fix:", e));
+    
+    videoLeft.onloadedmetadata = () => {
+      videoLeft.play().catch(e => console.log("Autoplay ditahan:", e));
+    };
+    playAllVideos();
   });
 
   call.on('close', () => {
@@ -371,7 +385,6 @@ async function kirim(data){
 async function prosesSignal(data){
   try{
     if(data.type === "hello"){
-      // Jika Host menerima 'hello' dari Guest, Host memastikan panggil balik Guest jika stream belum tersambung
       if(role === "host" && !currentCall){
         const guestPeerId = "minildr-" + roomCode.toLowerCase() + "-guest";
         const call = peer.call(guestPeerId, localStream);
@@ -380,7 +393,11 @@ async function prosesSignal(data){
         call.on('stream', (remoteStream) => {
           status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
           videoRight.srcObject = remoteStream;
-          videoRight.play().catch(e => console.log("Auto play fix:", e));
+          
+          videoRight.onloadedmetadata = () => {
+            videoRight.play().catch(e => console.log("Autoplay ditahan:", e));
+          };
+          playAllVideos();
         });
       }
     } else if(data.type === "photo" && !capturing){
