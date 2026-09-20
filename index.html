@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini LDR Studio - PeerJS Engine Fixed</title>
+  <title>Mini LDR Studio - 100% Realtime TURN Fixed</title>
   
   <!-- Supabase Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- PeerJS Library for WebRTC -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
     *{box-sizing:border-box}
@@ -105,7 +103,7 @@
 
 <main>
   <h1>📸 Mini LDR Studio</h1>
-  <p>Studio foto jarak jauh • Autoplay Fixed</p>
+  <p>Studio foto jarak jauh • 100% Realtime Relayed</p>
 
   <div id="setup">
     <button id="buatBtn">BUAT ROOM (HOST)</button>
@@ -121,11 +119,11 @@
 
   <!-- KAMERA DISPLAY -->
   <div id="cameras" class="cameras hidden">
-    <div class="camera" onclick="playAllVideos()">
+    <div class="camera" onclick="paksaPlayVideo()">
       <div class="label" id="labelLeft">HOST</div>
       <video id="videoLeft" autoplay playsinline muted></video>
     </div>
-    <div class="camera" onclick="playAllVideos()">
+    <div class="camera" onclick="paksaPlayVideo()">
       <div class="label" id="labelRight">GUEST</div>
       <video id="videoRight" autoplay playsinline muted></video>
     </div>
@@ -184,10 +182,8 @@ let role = null;
 let roomCode = null;
 let channel = null;
 let localStream = null;
-
 let peer = null;
-let currentCall = null;
-
+let pendingCandidates = [];
 let currentEffect = "fx-normal";
 let currentPrompt = "";
 let capturing = false;
@@ -242,7 +238,7 @@ document.getElementById("gabungBtn").onclick = async function(){
   await masukRoom();
 };
 
-function playAllVideos() {
+function paksaPlayVideo(){
   videoLeft.play().catch(e => console.log(e));
   videoRight.play().catch(e => console.log(e));
 }
@@ -283,92 +279,16 @@ async function masukRoom(){
   effectArea.classList.remove("hidden");
   aiArea.classList.remove("hidden");
 
-  // Inisialisasi PeerJS dengan ID Unik berbasis Room Code + Role
-  const peerId = "minildr-" + roomCode.toLowerCase() + "-" + role;
-  
-  peer = new Peer(peerId, {
-    debug: 1,
-    config: {
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" }
-      ]
-    }
-  });
+  buatPeer();
 
-  peer.on('open', (id) => {
-    status.innerText = "🟢 Terhubung. Menunggu pasangan...";
-    hubungkanSupabase();
-  });
-
-  peer.on('call', (call) => {
-    currentCall = call;
-    call.answer(localStream);
-    
-    call.on('stream', (remoteStream) => {
-      status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
-      const targetVideo = (role === "host") ? videoRight : videoLeft;
-      targetVideo.srcObject = remoteStream;
-      
-      // Paksa pemutaran video saat metadata siap
-      targetVideo.onloadedmetadata = () => {
-        targetVideo.play().catch(e => console.log("Autoplay ditahan:", e));
-      };
-      playAllVideos();
-    });
-
-    call.on('close', () => {
-      status.innerText = "🔴 Pasangan terputus.";
-    });
-  });
-
-  peer.on('error', (err) => {
-    console.error("PeerJS Error:", err);
-    if(err.type === 'peer-unavailable') {
-      status.innerText = "🟡 Menunggu Pasangan Membuka Room...";
-    } else {
-      status.innerText = "⚠️ Gangguan Koneksi PeerJS: " + err.type;
-    }
-  });
-}
-
-function hubungkanSupabase(){
   channel = supabaseClient.channel("mini-ldr-room-" + roomCode, { config: { broadcast: { self: false } } });
-  
   channel.on("broadcast", { event: "signal" }, async (msg) => await prosesSignal(msg.payload));
   
-  channel.subscribe((state) => {
+  channel.subscribe(async (state) => {
     if(state === "SUBSCRIBED"){
-      if (role === "guest") {
-        setTimeout(() => {
-          panggilHost();
-          kirim({ type: "hello" });
-        }, 1200);
-      }
+      status.innerText = "🟢 Terhubung ke Room. Menghubungkan video...";
+      setTimeout(() => { kirim({ type: "hello" }); }, 1000);
     }
-  });
-}
-
-function panggilHost(){
-  const hostPeerId = "minildr-" + roomCode.toLowerCase() + "-host";
-  status.innerText = "🟡 Memanggil Host...";
-  
-  const call = peer.call(hostPeerId, localStream);
-  currentCall = call;
-
-  call.on('stream', (remoteStream) => {
-    status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
-    videoLeft.srcObject = remoteStream;
-    
-    videoLeft.onloadedmetadata = () => {
-      videoLeft.play().catch(e => console.log("Autoplay ditahan:", e));
-    };
-    playAllVideos();
-  });
-
-  call.on('close', () => {
-    status.innerText = "🔴 Koneksi terputus dari Host.";
   });
 }
 
@@ -377,7 +297,66 @@ copyRoom.onclick = async () => {
   catch(e) { prompt("Salin kode:", roomCode); }
 };
 
-/* ================================================== BROADCAST CONTROL ================================================== */
+/* ================================================== WEBRTC ENGINE (TURN RELAY FIXED) ================================================== */
+function buatPeer(){
+  peer = new RTCPeerConnection({ 
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      // Open TURN Relay Public untuk menembus firewall seluler Kalimantan-Blora
+      {
+        urls: [
+          "turn:openrelay.metered.ca:80",
+          "turn:openrelay.metered.ca:443",
+          "turn:openrelay.metered.ca:443?transport=tcp"
+        ],
+        username: "openrelay",
+        credential: "openrelay"
+      }
+    ],
+    iceTransportPolicy: "all"
+  });
+
+  localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+
+  peer.ontrack = event => {
+    const targetVideo = (role === "host") ? videoRight : videoLeft;
+    if (targetVideo.srcObject !== event.streams[0]) {
+      targetVideo.srcObject = event.streams[0];
+      targetVideo.onloadedmetadata = () => {
+        targetVideo.play().catch(e => console.log("Auto play fix:", e));
+      };
+      paksaPlayVideo();
+    }
+  };
+
+  peer.onicecandidate = async event => {
+    if(event.candidate) await kirim({ type: "candidate", candidate: event.candidate });
+  };
+
+  peer.onconnectionstatechange = () => {
+    if(peer.connectionState === "connected") {
+      status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
+    } else if(peer.connectionState === "connecting") {
+      status.innerText = "🟡 Menghubungkan aliran video...";
+    } else if(peer.connectionState === "failed" || peer.connectionState === "disconnected") {
+      status.innerText = "🔴 Mengulang koneksi...";
+      ulangKoneksi();
+    }
+  };
+}
+
+async function ulangKoneksi() {
+  if (role === "host") {
+    try {
+      const offer = await peer.createOffer({ iceRestart: true });
+      await peer.setLocalDescription(offer);
+      await kirim({ type: "offer", sdp: peer.localDescription });
+    } catch(e) { console.error("Restart ICE Error:", e); }
+  }
+}
+
 async function kirim(data){
   if(channel) await channel.send({ type: "broadcast", event: "signal", payload: data });
 }
@@ -385,20 +364,31 @@ async function kirim(data){
 async function prosesSignal(data){
   try{
     if(data.type === "hello"){
-      if(role === "host" && !currentCall){
-        const guestPeerId = "minildr-" + roomCode.toLowerCase() + "-guest";
-        const call = peer.call(guestPeerId, localStream);
-        currentCall = call;
-
-        call.on('stream', (remoteStream) => {
-          status.innerText = "🟢 PASANGAN TERHUBUNG FULL!";
-          videoRight.srcObject = remoteStream;
-          
-          videoRight.onloadedmetadata = () => {
-            videoRight.play().catch(e => console.log("Autoplay ditahan:", e));
-          };
-          playAllVideos();
-        });
+      if(role === "host"){
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+        await kirim({ type: "offer", sdp: peer.localDescription });
+      }
+    } else if(data.type === "offer" && role === "guest"){
+      await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      const answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+      await kirim({ type: "answer", sdp: peer.localDescription });
+      
+      while(pendingCandidates.length){
+        await peer.addIceCandidate(pendingCandidates.shift());
+      }
+    } else if(data.type === "answer" && role === "host"){
+      await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      while(pendingCandidates.length){
+        await peer.addIceCandidate(pendingCandidates.shift());
+      }
+    } else if(data.type === "candidate"){
+      const candidate = new RTCIceCandidate(data.candidate);
+      if(peer.remoteDescription && peer.remoteDescription.type){
+        await peer.addIceCandidate(candidate);
+      } else {
+        pendingCandidates.push(candidate);
       }
     } else if(data.type === "photo" && !capturing){
       capturing = true;
